@@ -1,6 +1,7 @@
 import socket
 import threading
 import time
+import mysql.connector
 
 # Liste pour stocker les connexions des clients et leurs identifiants
 clients = {}
@@ -8,6 +9,30 @@ ban = {}
 kick = {}
 heur = {}
 
+# Initialiser la connexion à la base de données MySQL
+db_connection = mysql.connector.connect(
+    host="127.0.0.1",
+    user="root",
+    password="toto",
+    database="serveurchat"
+)
+db_cursor = db_connection.cursor()
+
+# Créer la table messages si elle n'existe pas
+db_cursor.execute('''
+    CREATE TABLE IF NOT EXISTS messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user VARCHAR(255),
+        message TEXT,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+''')
+db_connection.commit()
+
+def save_message(user, message):
+    # Sauvegarder le message dans la base de données
+    db_cursor.execute("INSERT INTO messages (user, message) VALUES (%s, %s)", (user, message))
+    db_connection.commit()
 def commande(serv):
     global clients
     global ban
@@ -76,6 +101,8 @@ def handle_client(client, address):
             if not message:
                 break
 
+            save_message(client_id, message.decode())
+
             # Diffuser le message à tous les clients connectés
             broadcast(message.decode(), client)
 
@@ -119,6 +146,9 @@ def main():
     finally:
         # Fermer le socket du serveur
         server_socket.close()
+
+        db_cursor.close()
+        db_connection.close()
 
 if __name__ == "__main__":
     main()

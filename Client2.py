@@ -1,19 +1,17 @@
 import socket
 import threading
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 import sys
 
-class login(QtWidgets.QWidget):
-
+class Login(QtWidgets.QWidget):
     switch_window = QtCore.pyqtSignal(str)
 
     def sending_login(self):
-        self.switch_window.emit(self.lineEdit.text())
-        text = self.lineEdit.text()
-        chatapp = ChatApplication()
-        chatapp.send_login(text)
+        username = self.lineEdit.text()
+        self.switch_window.emit(username)
+        self.send_message(username)  # Send the login message
 
-    def __init__(self):
+    def __init__(self, send_message_func):
         QtWidgets.QWidget.__init__(self)
 
         self.setObjectName("log")
@@ -32,29 +30,58 @@ class login(QtWidgets.QWidget):
         self.label_2.setGeometry(QtCore.QRect(30, 90, 121, 16))
         self.label_2.setObjectName("label_2")
 
+        self.send_message = send_message_func  # Reference to the message sending function
+
         self.setWindowTitle("Form")
         self.pushButton.setText("Connexion")
-        self.label.setText( "Connexion au serveur")
-        self.label_2.setText( "Entre votre pseudo")
+        self.label.setText("Connexion au serveur")
+        self.label_2.setText("Entre votre pseudo")
 
-class chat(QtWidgets.QWidget):
-    def __init__(self):
+class Chat(QtWidgets.QWidget):
+    message_signal = QtCore.pyqtSignal(str)
+
+    def sending_text(self):
+        text = self.line.text()
+        self.message_signal.emit(text)
+        self.send_message(text)  # Send the message
+
+    def __init__(self, send_message_func):
         QtWidgets.QWidget.__init__(self)
 
         self.setObjectName("Form")
         self.resize(1128, 630)
+        self.send_message = send_message_func
+
         self.pushButton = QtWidgets.QPushButton(self)
         self.pushButton.setGeometry(QtCore.QRect(840, 580, 81, 31))
         self.pushButton.setObjectName("pushButton")
-        self.lineEdit = QtWidgets.QLineEdit(self)
-        self.lineEdit.setGeometry(QtCore.QRect(302, 580, 541, 31))
-        self.lineEdit.setObjectName("lineEdit")
+
+        self.line = QtWidgets.QLineEdit(self)
+        self.pushButton.clicked.connect(self.sending_text)
+        self.line.setGeometry(QtCore.QRect(302, 580, 541, 31))
+        self.line.setObjectName("lineEdit")
+
         self.textEdit = QtWidgets.QTextEdit(self)
         self.textEdit.setGeometry(QtCore.QRect(170, 10, 801, 551))
         self.textEdit.setObjectName("textEdit")
 
         self.setWindowTitle("Form")
-        self.pushButton.setText( "Envoyer")
+        self.pushButton.setText("Envoyer")
+
+class SendMessagesThread(threading.Thread):
+    def __init__(self, client_socket, chat_widget):
+        threading.Thread.__init__(self)
+        self.client_socket = client_socket
+        self.chat_widget = chat_widget
+
+    def run(self):
+        try:
+            while True:
+                message = input("-> ")
+                self.client_socket.send(message.encode())
+                self.chat_widget.textEdit.append(f"{message}")
+        finally:
+            self.client_socket.close()
 
 class ChatApplication(QtWidgets.QWidget):
     def __init__(self):
@@ -63,48 +90,35 @@ class ChatApplication(QtWidgets.QWidget):
         self.client_socket = socket.socket()
         self.client_socket.connect(('127.0.0.1', 12345))
 
-        self.send_thread = threading.Thread(target=self.send_message)
-        self.receive_thread = threading.Thread(target=self.message_received)
+        self.fen2 = Chat(send_message_func=self.send_message)
+        self.fen2.message_signal.connect(self.receive_message)
 
+        self.send_thread = threading.Thread(target=self.receive_messages)
         self.send_thread.start()
-        self.receive_thread.start()
 
     def showfen1(self):
-        self.fen1 = login()
+        self.fen1 = Login(send_message_func=self.send_message)
         self.fen1.switch_window.connect(self.showfen2)
         self.fen1.show()
 
-
-    def showfen2(self):
-        self.fen2 = chat()
+    def showfen2(self, username):
+        self.fen1.close()
         self.fen2.show()
 
-    def send_login(self, send):
-        message = send
-        self.client_socket.send(message.encode())
-
-    def send_message(self):
-        try:
-            while True:
-                message = input("-> ")
-                self.client_socket.send(message.encode())
-
-        finally:
-            self.client_socket.close()
-
-    def message_received(self):
+    def receive_messages(self):
         while True:
             response = self.client_socket.recv(100)
             print(f"\n{response.decode()}")
+            self.fen2.textEdit.append(response.decode())
             if response.lower() == 'bye':
                 break
 
-    def send_button_clicked(self):
-        message = self.lineEdit.text()
-        self.textEdit.append(f"{message}")
-        self.client_socket.send(message.encode())
-        self.lineEdit.clear()
+    def receive_message(self, message):
+        self.fen2.textEdit.append(f"{message}")
+        self.fen2.line.clear()
 
+    def send_message(self, message):
+        self.client_socket.send(message.encode())
 
 
 def main():
@@ -115,5 +129,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
