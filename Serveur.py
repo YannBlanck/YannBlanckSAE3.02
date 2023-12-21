@@ -27,6 +27,13 @@ db_cursor.execute('''
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
 ''')
+
+db_cursor.execute('''
+    CREATE TABLE IF NOT EXISTS utilisateurs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nom VARCHAR(255)
+    )
+''')
 db_connection.commit()
 
 def save_message(user, message):
@@ -84,11 +91,53 @@ def remove_client(client):
         print(f"Client {client_id} déconnecté.")
         client.close()
 
+def inscription(client, client_id):
+    global db_cursor
+    global db_connection
+
+    try:
+        # Vérifier si l'utilisateur existe déjà dans la base de données
+        db_cursor.execute("SELECT id FROM utilisateurs WHERE nom = %s", (client_id,))
+        result = db_cursor.fetchone()
+
+        if result:
+            client.send("Cet identifiant est déjà utilisé. Veuillez en choisir un autre.".encode())
+            return
+
+        # Insérer l'utilisateur dans la base de données
+        db_cursor.execute("INSERT INTO utilisateurs (nom) VALUES (%s)", (client_id,))
+        db_connection.commit()
+
+        client.send("Inscription réussie! Vous pouvez maintenant envoyer des messages.".encode())
+    except Exception as e:
+        print(f"Erreur lors de l'inscription : {e}")
+        client.send("Une erreur s'est produite lors de l'inscription.".encode())
+
 def handle_client(client, address):
     try:
         # Demander à l'utilisateur de fournir un identifiant
-        client.send("Bienvenue! Veuillez fournir un identifiant : ".encode())
+        #client.send("Bienvenue! Veuillez fournir un identifiant : ".encode())
+
         client_id = client.recv(1024).decode()
+        clientident = client_id.strip()[12:]
+        inscript = client_id[:11]
+        print(client_id)
+        print(clientident)
+        print(inscript)
+
+        # Vérifier si le message est une demande d'inscription
+        if inscript.lower() == "inscription":
+            inscription(client, clientident)
+            return
+
+        # Vérifier si l'utilisateur est inscrit dans la base de données
+        db_cursor.execute("SELECT id FROM utilisateurs WHERE nom = %s", (client_id,))
+        result = db_cursor.fetchone()
+        print(result)
+
+        if not result:
+            client.send("Vous n'êtes pas inscrit. Veuillez vous inscrire pour accéder au chat.".encode())
+            return
 
         # Ajouter le client à la liste avec son identifiant
         clients[client] = client_id
@@ -105,6 +154,7 @@ def handle_client(client, address):
 
             # Diffuser le message à tous les clients connectés
             broadcast(message.decode(), client)
+            print(message.decode())
 
     except Exception as e:
         print(f"Erreur : {e}")
@@ -116,10 +166,10 @@ def handle_client(client, address):
 def main():
     global clients
 
-
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('127.0.0.1', 12345))
     server_socket.listen(5)
+    print(server_socket)
 
     commande_thread = threading.Thread(target=commande, args=(server_socket,))
     commande_thread.start()
@@ -139,7 +189,6 @@ def main():
             # Gérer le client dans un thread distinct
             client_thread = threading.Thread(target=handle_client, args=(client_socket,address))
             client_thread.start()
-
 
     except KeyboardInterrupt:
         print("Arrêt du serveur.")

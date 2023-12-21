@@ -68,6 +68,41 @@ class Chat(QtWidgets.QWidget):
         self.setWindowTitle("Form")
         self.pushButton.setText("Envoyer")
 
+class Inscription(QtWidgets.QWidget):
+    inscription_signal = QtCore.pyqtSignal(str)
+
+    def sending_inscription(self):
+        username = self.lineEdit.text()
+        self.inscription_signal.emit(username)
+        self.send_message(username)  # Send the inscription message
+
+    def __init__(self, send_message_func):
+        QtWidgets.QWidget.__init__(self)
+
+        self.setObjectName("log")
+        self.resize(428, 167)
+        self.lineEdit = QtWidgets.QLineEdit(self)
+        self.lineEdit.setGeometry(QtCore.QRect(30, 110, 241, 31))
+        self.lineEdit.setObjectName("lineEdit")
+        self.pushButton = QtWidgets.QPushButton(self)
+        self.pushButton.setGeometry(QtCore.QRect(280, 110, 75, 31))
+        self.pushButton.setObjectName("pushButton")
+        self.pushButton.clicked.connect(self.sending_inscription)
+        self.label = QtWidgets.QLabel(self)
+        self.label.setGeometry(QtCore.QRect(150, 10, 121, 16))
+        self.label.setObjectName("label")
+        self.label_2 = QtWidgets.QLabel(self)
+        self.label_2.setGeometry(QtCore.QRect(30, 90, 121, 16))
+        self.label_2.setObjectName("label_2")
+
+        self.send_message = send_message_func  # Reference to the message sending function
+
+        self.setWindowTitle("Form")
+        self.pushButton.setText("Inscription")
+        self.label.setText("Inscription au serveur")
+        self.label_2.setText("Entrez votre pseudo")
+
+
 class SendMessagesThread(threading.Thread):
     def __init__(self, client_socket, chat_widget):
         threading.Thread.__init__(self)
