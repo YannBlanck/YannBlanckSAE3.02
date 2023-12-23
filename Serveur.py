@@ -118,17 +118,14 @@ def message_inscription(client, address):
     client_id = client.recv(1024).decode()
     clientident = client_id.strip()[12:]
     inscript = client_id[:11]
-    print(client_id)
-    print(clientident)
-    print(inscript)
+    #print(client_id)
+    #print(clientident)
+    #print(inscript)
 
     # Vérifier si le message est une demande d'inscription
     if inscript.lower() == "inscription":
         inscription(client, clientident)
         return
-
-
-
 
 def message_connexion(client, address):
     client_id = client.recv(1024).decode()
@@ -138,32 +135,47 @@ def message_connexion(client, address):
     # Vérifier si l'utilisateur est inscrit dans la base de données
     db_cursor.execute("SELECT id FROM utilisateurs WHERE nom = %s", (client_name,))
     result = db_cursor.fetchone()
-    print(result)
+    #print(result)
 
     if not result:
         client.send("Vous n'êtes pas inscrit. Veuillez vous inscrire pour accéder au chat.".encode())
         return
+    try:
+        if result:
+            clients[client] = client_name
+            print(f"Nouveau client connecté: {client_name}")
 
-    if result:
-        clients[client] = client_name
-        print(f"Nouveau client connecté: {client_name}")
+            while True:
+            # Recevoir un message du client
+                message = client.recv(1024)
+                print(f"{client_name}, {message.decode()}")
+                if not message:
+                    break
 
-        while True:
-        # Recevoir un message du client
-            message = client.recv(1024)
-            print(f"{client_name}, {message.decode()}")
-            if not message:
-                break
+                save_message(client_name, message.decode())
 
-            save_message(client_name, message.decode())
+                # Diffuser le message à tous les clients connectés
+                broadcast(message.decode(), client)
+                #print(message.decode())
+    except ConnectionResetError:
+        # Le client s'est déconnecté de manière inattendue
+        print("Client déconnecté de manière inattendue.")
+    finally:
+        # Gérer la déconnexion du client
+        handle_disconnection(client)
 
-            # Diffuser le message à tous les clients connectés
-            broadcast(message.decode(), client)
-            print(message.decode())
 
-        # Supprimer le client de la liste sans fermer la connexion
-        remove_client(client)
+def handle_disconnection(client_socket):
+    global clients
 
+    # Récupérer le nom du client déconnecté
+    disconnected_client = clients.get(client_socket)
+
+    if disconnected_client:
+        print(f"Client déconnecté: {disconnected_client}")
+        remove_client(client_socket)
+    else:
+        print("Erreur lors de la déconnexion : client non trouvé.")
 
 def handle_client(client, address):
 
@@ -177,7 +189,7 @@ def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('127.0.0.1', 12345))
     server_socket.listen(5)
-    print(server_socket)
+    #print(server_socket)
 
     commande_thread = threading.Thread(target=commande, args=(server_socket,))
     commande_thread.start()

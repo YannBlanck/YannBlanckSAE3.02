@@ -3,29 +3,45 @@ import threading
 from PyQt5 import QtCore, QtWidgets
 import sys
 
+
 class Login(QtWidgets.QWidget):
     switch_window = QtCore.pyqtSignal(str)
 
     def sending_login(self):
         username = self.lineEdit.text()
         self.switch_window.emit(username)
-        self.send_message(username)  # Send the login message
+        login_data = f"connexion {username}"
+        self.send_message(login_data)  # Send the login message
+
+    def open_inscription(self):
+        self.feninsc.show()
 
     def __init__(self, send_message_func):
         QtWidgets.QWidget.__init__(self)
 
+        self.feninsc = Inscription(send_message_func=send_message_func)  # Pass send_message_func to Inscription
+
         self.setObjectName("log")
         self.resize(428, 167)
+
         self.lineEdit = QtWidgets.QLineEdit(self)
         self.lineEdit.setGeometry(QtCore.QRect(30, 110, 241, 31))
         self.lineEdit.setObjectName("lineEdit")
+
         self.pushButton = QtWidgets.QPushButton(self)
         self.pushButton.setGeometry(QtCore.QRect(280, 110, 75, 31))
         self.pushButton.setObjectName("pushButton")
         self.pushButton.clicked.connect(self.sending_login)
+
+        self.inscbutton = QtWidgets.QPushButton(self)
+        self.inscbutton.setGeometry(QtCore.QRect(280, 69, 75, 31))
+        self.inscbutton.setObjectName("inscbutton")
+        self.inscbutton.clicked.connect(self.open_inscription)
+
         self.label = QtWidgets.QLabel(self)
         self.label.setGeometry(QtCore.QRect(150, 10, 121, 16))
         self.label.setObjectName("label")
+
         self.label_2 = QtWidgets.QLabel(self)
         self.label_2.setGeometry(QtCore.QRect(30, 90, 121, 16))
         self.label_2.setObjectName("label_2")
@@ -36,6 +52,7 @@ class Login(QtWidgets.QWidget):
         self.pushButton.setText("Connexion")
         self.label.setText("Connexion au serveur")
         self.label_2.setText("Entre votre pseudo")
+        self.inscbutton.setText("Inscription")
 
 class Chat(QtWidgets.QWidget):
     message_signal = QtCore.pyqtSignal(str)
@@ -68,29 +85,39 @@ class Chat(QtWidgets.QWidget):
         self.setWindowTitle("Form")
         self.pushButton.setText("Envoyer")
 
+
 class Inscription(QtWidgets.QWidget):
     inscription_signal = QtCore.pyqtSignal(str)
 
     def sending_inscription(self):
         username = self.lineEdit.text()
         self.inscription_signal.emit(username)
-        self.send_message(username)  # Send the inscription message
+        #self.send_message(username)
+        registration_data = f"inscription {username}"
+        print(f"envoyer{registration_data}")
+        self.send_message(registration_data)
+
+        self.close()# Send the inscription message
 
     def __init__(self, send_message_func):
         QtWidgets.QWidget.__init__(self)
 
         self.setObjectName("log")
         self.resize(428, 167)
+
         self.lineEdit = QtWidgets.QLineEdit(self)
         self.lineEdit.setGeometry(QtCore.QRect(30, 110, 241, 31))
         self.lineEdit.setObjectName("lineEdit")
+
         self.pushButton = QtWidgets.QPushButton(self)
         self.pushButton.setGeometry(QtCore.QRect(280, 110, 75, 31))
         self.pushButton.setObjectName("pushButton")
         self.pushButton.clicked.connect(self.sending_inscription)
+
         self.label = QtWidgets.QLabel(self)
         self.label.setGeometry(QtCore.QRect(150, 10, 121, 16))
         self.label.setObjectName("label")
+
         self.label_2 = QtWidgets.QLabel(self)
         self.label_2.setGeometry(QtCore.QRect(30, 90, 121, 16))
         self.label_2.setObjectName("label_2")
@@ -101,7 +128,6 @@ class Inscription(QtWidgets.QWidget):
         self.pushButton.setText("Inscription")
         self.label.setText("Inscription au serveur")
         self.label_2.setText("Entrez votre pseudo")
-
 
 class SendMessagesThread(threading.Thread):
     def __init__(self, client_socket, chat_widget):
@@ -154,7 +180,6 @@ class ChatApplication(QtWidgets.QWidget):
 
     def send_message(self, message):
         self.client_socket.send(message.encode())
-
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
