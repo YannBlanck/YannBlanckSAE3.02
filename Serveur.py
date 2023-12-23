@@ -40,6 +40,7 @@ def save_message(user, message):
     # Sauvegarder le message dans la base de données
     db_cursor.execute("INSERT INTO messages (user, message) VALUES (%s, %s)", (user, message))
     db_connection.commit()
+
 def commande(serv):
     global clients
     global ban
@@ -52,7 +53,7 @@ def commande(serv):
         if command.lower() ==  "kill":
 
             for client in clients.keys():
-                client.close()# a voir pour uiliser settimeout(60)
+                client.close()
                 serv.close()
             break
 
@@ -70,9 +71,9 @@ def commande(serv):
                 if id == user:
                     kick[client_socket] = time.time() + 360  # Bloquer le client pour 60 secondes
                     break
-
         else:
             print(f"commande inconnue: {command}")
+
 
 def broadcast(message, sender):
     for client, client_id in clients.items():
@@ -113,55 +114,62 @@ def inscription(client, client_id):
         print(f"Erreur lors de l'inscription : {e}")
         client.send("Une erreur s'est produite lors de l'inscription.".encode())
 
-def handle_client(client, address):
-    try:
-        # Demander à l'utilisateur de fournir un identifiant
-        #client.send("Bienvenue! Veuillez fournir un identifiant : ".encode())
+def message_inscription(client, address):
+    client_id = client.recv(1024).decode()
+    clientident = client_id.strip()[12:]
+    inscript = client_id[:11]
+    print(client_id)
+    print(clientident)
+    print(inscript)
 
-        client_id = client.recv(1024).decode()
-        clientident = client_id.strip()[12:]
-        inscript = client_id[:11]
-        print(client_id)
-        print(clientident)
-        print(inscript)
+    # Vérifier si le message est une demande d'inscription
+    if inscript.lower() == "inscription":
+        inscription(client, clientident)
+        return
 
-        # Vérifier si le message est une demande d'inscription
-        if inscript.lower() == "inscription":
-            inscription(client, clientident)
-            return
 
-        # Vérifier si l'utilisateur est inscrit dans la base de données
-        db_cursor.execute("SELECT id FROM utilisateurs WHERE nom = %s", (client_id,))
-        result = db_cursor.fetchone()
-        print(result)
 
-        if not result:
-            client.send("Vous n'êtes pas inscrit. Veuillez vous inscrire pour accéder au chat.".encode())
-            return
 
-        # Ajouter le client à la liste avec son identifiant
-        clients[client] = client_id
-        print(f"Nouveau client connecté: {client_id}")
+def message_connexion(client, address):
+    client_id = client.recv(1024).decode()
+    client_name = client_id.strip()[10:]
+    connexion = client_id[:9]
+
+    # Vérifier si l'utilisateur est inscrit dans la base de données
+    db_cursor.execute("SELECT id FROM utilisateurs WHERE nom = %s", (client_name,))
+    result = db_cursor.fetchone()
+    print(result)
+
+    if not result:
+        client.send("Vous n'êtes pas inscrit. Veuillez vous inscrire pour accéder au chat.".encode())
+        return
+
+    if result:
+        clients[client] = client_name
+        print(f"Nouveau client connecté: {client_name}")
 
         while True:
-            # Recevoir un message du client
+        # Recevoir un message du client
             message = client.recv(1024)
-            print(f"{client_id}, {message.decode()}")
+            print(f"{client_name}, {message.decode()}")
             if not message:
                 break
 
-            save_message(client_id, message.decode())
+            save_message(client_name, message.decode())
 
             # Diffuser le message à tous les clients connectés
             broadcast(message.decode(), client)
             print(message.decode())
 
-    except Exception as e:
-        print(f"Erreur : {e}")
-
-    finally:
         # Supprimer le client de la liste sans fermer la connexion
         remove_client(client)
+
+
+def handle_client(client, address):
+
+    message_connexion(client, address)
+
+    message_inscription(client, address)
 
 def main():
     global clients

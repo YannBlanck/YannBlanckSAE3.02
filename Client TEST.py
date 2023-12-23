@@ -10,7 +10,8 @@ class Login(QtWidgets.QWidget):
     def sending_login(self):
         username = self.lineEdit.text()
         self.switch_window.emit(username)
-        self.send_message(username)  # Send the login message
+        login_data = f"connexion {username}"
+        self.send_message(login_data)  # Send the login message
 
     def open_inscription(self):
         self.feninsc.show()
