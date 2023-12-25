@@ -50,11 +50,11 @@ def commande(serv):
         comm = command[:3]
         com = command[:4]
         user=""
-        if command.lower() ==  "kill":
 
-            for client in clients.keys():
-                client.close()
-                serv.close()
+        if command.lower() == "kill":
+            for client_socket in clients.keys():
+                client_socket.close()
+            serv.close()
             break
 
         elif comm.lower() == "ban":
