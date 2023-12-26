@@ -44,12 +44,27 @@ def save_message(user, message):
 def commande(serv):
     global clients
     global ban
+    global serveur_connecte  # Ajouter cette ligne
+
+    password = input("Entrez le mot de passe du serveur: ")  # Définir un mot de passe
+    if password == "toto":
+        serveur_connecte = True
+        print("Serveur connecté.")
+    else:
+        print("Mot de passe incorrect. Le serveur ne sera pas connecté.")
+        return
 
     while True:
         command = input()
+
+        # Vérifier si le serveur est connecté avant d'autoriser les commandes
+        if not serveur_connecte:
+            print("Le serveur n'est pas connecté. Connectez-vous d'abord.")
+            continue
+
         comm = command[:3]
         com = command[:4]
-        user=""
+        user = ""
 
         if command.lower() == "kill":
             for client_socket in clients.keys():
@@ -59,10 +74,10 @@ def commande(serv):
 
         elif comm.lower() == "ban":
             user = command[4:]
-            for client_id in clients:
+            for client_id, client_socket in clients.items():
                 if client_id == user:
-                    ban[client] = client_id
-                    client.close()
+                    ban[client_socket] = client_id
+                    client_socket.close()
                     break
 
         elif com.lower() == "kick":
@@ -72,8 +87,7 @@ def commande(serv):
                     kick[client_socket] = time.time() + 360  # Bloquer le client pour 60 secondes
                     break
         else:
-            print(f"commande inconnue: {command}")
-
+            print(f"Commande inconnue: {command}")
 
 def broadcast(message, sender):
     for client, client_id in clients.items():
@@ -185,6 +199,8 @@ def handle_client(client, address):
 
 def main():
     global clients
+
+
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('127.0.0.1', 12345))
