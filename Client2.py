@@ -56,11 +56,20 @@ class Login(QtWidgets.QWidget):
 
 class Chat(QtWidgets.QWidget):
     message_signal = QtCore.pyqtSignal(str)
+    disconnect_signal = QtCore.pyqtSignal()
 
     def sending_text(self):
         text = self.line.text()
         self.message_signal.emit(text)
         self.send_message(text)  # Send the message
+
+    def disconnect(self):
+        self.disconnect_signal.emit()
+
+    def change_channel(self):
+        channel=self.channel_combobox.currentText()
+        # Envoyer un message spécial pour indiquer le changement de salon
+        self.send_message(f"/join {channel}")
 
     def __init__(self, send_message_func):
         QtWidgets.QWidget.__init__(self)
@@ -72,9 +81,10 @@ class Chat(QtWidgets.QWidget):
         self.pushButton = QtWidgets.QPushButton(self)
         self.pushButton.setGeometry(QtCore.QRect(840, 580, 81, 31))
         self.pushButton.setObjectName("pushButton")
+        self.pushButton.setText("Envoyer")
+        self.pushButton.clicked.connect(self.sending_text)
 
         self.line = QtWidgets.QLineEdit(self)
-        self.pushButton.clicked.connect(self.sending_text)
         self.line.setGeometry(QtCore.QRect(302, 580, 541, 31))
         self.line.setObjectName("lineEdit")
 
@@ -82,9 +92,23 @@ class Chat(QtWidgets.QWidget):
         self.textEdit.setGeometry(QtCore.QRect(170, 10, 801, 551))
         self.textEdit.setObjectName("textEdit")
 
-        self.setWindowTitle("Form")
-        self.pushButton.setText("Envoyer")
+        self.disconnect_button = QtWidgets.QPushButton(self)
+        self.disconnect_button.setGeometry(QtCore.QRect(10, 580, 81, 31))
+        self.disconnect_button.setObjectName("disconnect_button")
+        self.disconnect_button.setText("Déconnexion")
+        self.disconnect_button.clicked.connect(self.disconnect)
 
+        self.channel_combobox = QtWidgets.QComboBox(self)
+        self.channel_combobox.setGeometry(QtCore.QRect(100, 580, 120, 31))
+        self.channel_combobox.setObjectName("channel_combobox")
+        self.channel_combobox.addItem("General")
+        self.channel_combobox.addItem("Blabla")
+        self.channel_combobox.addItem("Comptabilite")
+        self.channel_combobox.addItem("Informatique")
+        self.channel_combobox.addItem("Marketing")
+        self.channel_combobox.currentIndexChanged.connect(self.change_channel )
+
+        self.setWindowTitle("CHAT SAE")
 
 class Inscription(QtWidgets.QWidget):
     inscription_signal = QtCore.pyqtSignal(str)
@@ -129,20 +153,6 @@ class Inscription(QtWidgets.QWidget):
         self.label.setText("Inscription au serveur")
         self.label_2.setText("Entrez votre pseudo")
 
-class SendMessagesThread(threading.Thread):
-    def __init__(self, client_socket, chat_widget):
-        threading.Thread.__init__(self)
-        self.client_socket = client_socket
-        self.chat_widget = chat_widget
-
-    def run(self):
-        try:
-            while True:
-                message = input("-> ")
-                self.client_socket.send(message.encode())
-                self.chat_widget.textEdit.append(f"{message}")
-        finally:
-            self.client_socket.close()
 
 class ChatApplication(QtWidgets.QWidget):
     def __init__(self):
@@ -153,6 +163,7 @@ class ChatApplication(QtWidgets.QWidget):
 
         self.fen2 = Chat(send_message_func=self.send_message)
         self.fen2.message_signal.connect(self.receive_message)
+        self.fen2.disconnect_signal.connect(self.disconnect_client)
 
         self.send_thread = threading.Thread(target=self.receive_messages)
         self.send_thread.start()
@@ -180,6 +191,20 @@ class ChatApplication(QtWidgets.QWidget):
 
     def send_message(self, message):
         self.client_socket.send(message.encode())
+
+    def disconnect_client(self):
+        # Ferme la fenêtre de chat
+        self.fen2.close()
+
+        # Termine le programme
+        QtWidgets.QApplication.quit()
+
+        reponses = "bye"
+
+        # Arrête le thread
+        self.send_thread.quit()
+        self.send_thread.wait()
+
 
 def main():
     app = QtWidgets.QApplication(sys.argv)

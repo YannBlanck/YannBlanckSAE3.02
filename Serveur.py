@@ -3,6 +3,30 @@ import threading
 import time
 import mysql.connector
 
+
+"""
+Serveur de chat avec gestion des utilisateurs, commandes administratives,
+et sauvegarde des messages dans une base de données MySQL.
+
+Auteur: [Votre nom/identifiant]
+Version: [Numéro de version]
+Date: [Date de création ou de dernière modification]
+
+Fonctions principales:
+- main(): Lance le serveur, accepte les connexions des clients et crée des threads pour gérer chaque client.
+- handle_client(client, address): Gère les messages d'un client connecté, inscription et connexion.
+- handle_disconnection(client_socket): Gère la déconnexion d'un client.
+- inscription(client, client_id): Gère l'inscription d'un utilisateur dans la base de données.
+- broadcast(message, sender): Diffuse un message à tous les clients connectés.
+
+Variables globales:
+- clients: Dictionnaire des connexions clients et de leurs identifiants.
+- ban: Dictionnaire des clients bannis.
+- kick: Dictionnaire des clients kickés pour un certain temps.
+- db_connection: Connexion à la base de données MySQL.
+- db_cursor: Curseur pour exécuter des requêtes MySQL.
+"""
+
 # Liste pour stocker les connexions des clients et leurs identifiants
 clients = {}
 ban = {}
@@ -12,9 +36,10 @@ heur = {}
 # Initialiser la connexion à la base de données MySQL
 db_connection = mysql.connector.connect(
     host="127.0.0.1",
-    user="root",
-    password="toto",
-    database="serveurchat"
+    user="Admin",
+    password="Admin",
+    database="serveurchat",
+    #auth_plugin = "mysql_native_password"
 )
 db_cursor = db_connection.cursor()
 

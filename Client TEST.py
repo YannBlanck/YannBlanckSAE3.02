@@ -5,13 +5,14 @@ import sys
 
 
 class Login(QtWidgets.QWidget):
-    switch_window = QtCore.pyqtSignal(str)
+    switch_window = QtCore.pyqtSignal(str, str)
 
     def sending_login(self):
         username = self.lineEdit.text()
-        self.switch_window.emit(username)
+        ip_address = self.ipLineEdit.text()  # Get the IP address from the QLineEdit
+        self.switch_window.emit(username, ip_address)  # Emit the signal with both username and IP address
         login_data = f"connexion {username}"
-        self.send_message(login_data)  # Send the login message
+        self.send_message(login_data) # Send the login message
 
     def open_inscription(self):
         self.feninsc.show()
@@ -46,6 +47,24 @@ class Login(QtWidgets.QWidget):
         self.label_2.setGeometry(QtCore.QRect(30, 90, 121, 16))
         self.label_2.setObjectName("label_2")
 
+        # Add a QLineEdit for IP address input
+        self.ipLineEdit = QtWidgets.QLineEdit(self)
+        self.ipLineEdit.setGeometry(QtCore.QRect(30, 30, 241, 31))
+        self.ipLineEdit.setObjectName("ipLineEdit")
+        self.ipLineEdit.setPlaceholderText("Enter Server IP")
+
+        # Utilisation d'un layout vertical
+        layout = QtWidgets.QVBoxLayout(self)
+
+        # Ajout des widgets au layout
+        layout.addWidget(self.label)
+        layout.addWidget(self.label_2)
+        layout.addWidget(self.ipLineEdit)
+        layout.addWidget(self.lineEdit)
+        layout.addWidget(self.pushButton)
+        layout.addWidget(self.inscbutton)
+
+
         self.send_message = send_message_func  # Reference to the message sending function
 
         self.setWindowTitle("Form")
@@ -66,6 +85,11 @@ class Chat(QtWidgets.QWidget):
     def disconnect(self):
         self.disconnect_signal.emit()
 
+    def change_channel(self):
+        channel=self.channel_combobox.currentText()
+        # Envoyer un message spécial pour indiquer le changement de salon
+        self.send_message(f"/join {channel}")
+
     def __init__(self, send_message_func):
         QtWidgets.QWidget.__init__(self)
 
@@ -77,9 +101,9 @@ class Chat(QtWidgets.QWidget):
         self.pushButton.setGeometry(QtCore.QRect(840, 580, 81, 31))
         self.pushButton.setObjectName("pushButton")
         self.pushButton.setText("Envoyer")
+        self.pushButton.clicked.connect(self.sending_text)
 
         self.line = QtWidgets.QLineEdit(self)
-        self.pushButton.clicked.connect(self.sending_text)
         self.line.setGeometry(QtCore.QRect(302, 580, 541, 31))
         self.line.setObjectName("lineEdit")
 
@@ -92,6 +116,27 @@ class Chat(QtWidgets.QWidget):
         self.disconnect_button.setObjectName("disconnect_button")
         self.disconnect_button.setText("Déconnexion")
         self.disconnect_button.clicked.connect(self.disconnect)
+
+        #self.channel_combobox = QtWidgets.QComboBox(self)
+        #self.channel_combobox.setGeometry(QtCore.QRect(100, 580, 120, 31))
+        #self.channel_combobox.setObjectName("channel_combobox")
+        #self.channel_combobox.addItem("General")
+        #self.channel_combobox.addItem("Blabla")
+        #self.channel_combobox.addItem("Comptabilite")
+        #self.channel_combobox.addItem("Informatique")
+        #self.channel_combobox.addItem("Marketing")
+        #self.channel_combobox.currentIndexChanged.connect(self.change_channel )
+
+
+        # Utilisation d'un layout vertical
+        layout = QtWidgets.QVBoxLayout(self)
+
+        # Ajout des widgets au layout
+        layout.addWidget(self.textEdit)
+        #layout.addWidget(self.channel_combobox)
+        layout.addWidget(self.line)
+        layout.addWidget(self.pushButton)
+        layout.addWidget(self.disconnect_button)
 
         self.setWindowTitle("CHAT SAE")
 
@@ -131,6 +176,15 @@ class Inscription(QtWidgets.QWidget):
         self.label_2.setGeometry(QtCore.QRect(30, 90, 121, 16))
         self.label_2.setObjectName("label_2")
 
+        layout = QtWidgets.QVBoxLayout(self)
+
+        # Ajout des widgets au layout
+        layout.addWidget(self.label)
+        layout.addWidget(self.label_2)
+        layout.addWidget(self.lineEdit)
+        layout.addWidget(self.pushButton)
+
+
         self.send_message = send_message_func  # Reference to the message sending function
 
         self.setWindowTitle("Form")
@@ -143,8 +197,35 @@ class ChatApplication(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
 
-        self.client_socket = socket.socket()
-        self.client_socket.connect(('127.0.0.1', 12345))
+        self.showfen1()
+
+        #server_ip = self.fen1.ipLineEdit.text()
+
+
+        #self.client_socket = socket.socket()
+        #self.client_socket.connect((server_ip, 12345))
+
+    def connect_to_server(self, username, ip_address):
+        if ip_address:
+            print(ip_address)
+
+            self.client_socket = socket.socket()
+            try:
+                self.client_socket.connect((ip_address, 12345))
+                self.showfen2(username)
+            except Exception as e:
+                print(f"Error connecting to the server: {e}")
+                # Handle the connection error as needed
+
+
+    def showfen1(self):
+        self.fen1 = Login(send_message_func=self.send_message)
+        #self.fen1.switch_window.connect(self.showfen2)
+        self.fen1.switch_window.connect(self.connect_to_server)
+        self.fen1.show()
+
+    def showfen2(self, username):
+        self.fen1.close()
 
         self.fen2 = Chat(send_message_func=self.send_message)
         self.fen2.message_signal.connect(self.receive_message)
@@ -153,13 +234,6 @@ class ChatApplication(QtWidgets.QWidget):
         self.send_thread = threading.Thread(target=self.receive_messages)
         self.send_thread.start()
 
-    def showfen1(self):
-        self.fen1 = Login(send_message_func=self.send_message)
-        self.fen1.switch_window.connect(self.showfen2)
-        self.fen1.show()
-
-    def showfen2(self, username):
-        self.fen1.close()
         self.fen2.show()
 
     def receive_messages(self):
