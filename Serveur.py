@@ -36,8 +36,8 @@ heur = {}
 # Initialiser la connexion à la base de données MySQL
 db_connection = mysql.connector.connect(
     host="127.0.0.1",
-    user="Admin",
-    password="Admin",
+    user="root",
+    password="toto",
     database="serveurchat",
     #auth_plugin = "mysql_native_password"
 )
@@ -228,14 +228,14 @@ def main():
 
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('127.0.0.1', 12345))
+    server_socket.bind(('0.0.0.0', 12345))
     server_socket.listen(5)
     #print(server_socket)
 
     commande_thread = threading.Thread(target=commande, args=(server_socket,))
     commande_thread.start()
 
-    print("Serveur activé sur 127.0.0.1:12345")
+    print("Serveur activé")
 
     try:
         while True:

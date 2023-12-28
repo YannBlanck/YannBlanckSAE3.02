@@ -15,12 +15,13 @@ class Login(QtWidgets.QWidget):
         self.send_message(login_data) # Send the login message
 
     def open_inscription(self):
-        self.feninsc.show()
+        ChatApplication.showinsc()
+
 
     def __init__(self, send_message_func):
         QtWidgets.QWidget.__init__(self)
 
-        self.feninsc = Inscription(send_message_func=send_message_func)  # Pass send_message_func to Inscription
+        self.feninsc = Inscription(send_message_func=send_message_func)
 
         self.setObjectName("log")
         self.resize(428, 167)
@@ -141,27 +142,38 @@ class Chat(QtWidgets.QWidget):
         self.setWindowTitle("CHAT SAE")
 
 class Inscription(QtWidgets.QWidget):
-    inscription_signal = QtCore.pyqtSignal(str)
+    inscription_signal = QtCore.pyqtSignal(str, str)
 
     def sending_inscription(self):
         username = self.lineEdit.text()
-        self.inscription_signal.emit(username)
-        #self.send_message(username)
-        registration_data = f"inscription {username}"
-        print(f"envoyer{registration_data}")
-        self.send_message(registration_data)
+        ip_address = self.ipLineEdit.text()
 
-        self.close()# Send the inscription message
+        registration_data = f"inscription {username}"
+        print(f"envoyer {registration_data}")
+        self.inscription_signal.emit(registration_data, ip_address)
+        self.send_message(registration_data)
+        self.close()
+
+    def send_inscription_data(self, username, ip_address):
+        # Cette fonction est appelée lors de l'émission du signal
+        # Elle transmet les données à la fonction connect_to_server
+        self.connect_to_server(username, ip_address)
 
     def __init__(self, send_message_func):
         QtWidgets.QWidget.__init__(self)
 
+        self.send_message = send_message_func
         self.setObjectName("log")
         self.resize(428, 167)
 
         self.lineEdit = QtWidgets.QLineEdit(self)
         self.lineEdit.setGeometry(QtCore.QRect(30, 110, 241, 31))
         self.lineEdit.setObjectName("lineEdit")
+
+        self.ipLineEdit = QtWidgets.QLineEdit(self)
+        self.ipLineEdit.setGeometry(QtCore.QRect(30, 30, 241, 31))
+        self.ipLineEdit.setObjectName("ipLineEdit")
+        self.ipLineEdit.setPlaceholderText("Enter Server IP")
 
         self.pushButton = QtWidgets.QPushButton(self)
         self.pushButton.setGeometry(QtCore.QRect(280, 110, 75, 31))
@@ -181,9 +193,9 @@ class Inscription(QtWidgets.QWidget):
         # Ajout des widgets au layout
         layout.addWidget(self.label)
         layout.addWidget(self.label_2)
+        layout.addWidget(self.ipLineEdit)
         layout.addWidget(self.lineEdit)
         layout.addWidget(self.pushButton)
-
 
         self.send_message = send_message_func  # Reference to the message sending function
 
@@ -201,7 +213,6 @@ class ChatApplication(QtWidgets.QWidget):
 
         #server_ip = self.fen1.ipLineEdit.text()
 
-
         #self.client_socket = socket.socket()
         #self.client_socket.connect((server_ip, 12345))
 
@@ -212,6 +223,9 @@ class ChatApplication(QtWidgets.QWidget):
             self.client_socket = socket.socket()
             try:
                 self.client_socket.connect((ip_address, 12345))
+                if username[:11] == "inscription":
+                    self.send_message(username)
+
                 self.showfen2(username)
             except Exception as e:
                 print(f"Error connecting to the server: {e}")
@@ -220,9 +234,17 @@ class ChatApplication(QtWidgets.QWidget):
 
     def showfen1(self):
         self.fen1 = Login(send_message_func=self.send_message)
-        #self.fen1.switch_window.connect(self.showfen2)
+
         self.fen1.switch_window.connect(self.connect_to_server)
+
         self.fen1.show()
+
+
+    def showinsc(self):
+        self.fenisnc = Inscription(send_message_func=self.send_message)
+        self.fenisnc.inscription_signal.connect(self.connect_to_server)
+        self.fenisnc.show()
+
 
     def showfen2(self, username):
         self.fen1.close()
@@ -269,6 +291,7 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     chat_app = ChatApplication()
     chat_app.showfen1()
+    chat_app.showinsc()
     sys.exit(app.exec())
 
 if __name__ == "__main__":
