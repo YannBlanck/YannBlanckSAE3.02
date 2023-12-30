@@ -4,7 +4,7 @@ from PyQt5 import QtCore, QtWidgets
 import sys
 
 """
-Application de discussion avec interface graphique (GUI) en PyQt5.
+Application de discussion avec interface graphique (GUI) en PyQt5
 
 Ce script crée une application de chat où les utilisateurs peuvent se connecter, s'inscrire,
 et échanger des messages avec un serveur distant.

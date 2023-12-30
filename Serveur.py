@@ -6,7 +6,7 @@ import mysql.connector
 
 
 """
-Serveur de chat basique.
+Serveur de chat
 
 Ce script crée un serveur de chat permettant aux utilisateurs de se connecter, de s'inscrire,
 et d'échanger des messages.
