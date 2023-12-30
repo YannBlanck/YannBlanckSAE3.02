@@ -5,26 +5,21 @@ import mysql.connector
 
 
 """
-Serveur de chat avec gestion des utilisateurs, commandes administratives,
-et sauvegarde des messages dans une base de données MySQL.
+Serveur de chat basique.
 
-Auteur: [Votre nom/identifiant]
-Version: [Numéro de version]
-Date: [Date de création ou de dernière modification]
+Ce script crée un serveur de chat permettant aux utilisateurs de se connecter, de s'inscrire,
+et d'échanger des messages.
 
-Fonctions principales:
-- main(): Lance le serveur, accepte les connexions des clients et crée des threads pour gérer chaque client.
-- handle_client(client, address): Gère les messages d'un client connecté, inscription et connexion.
-- handle_disconnection(client_socket): Gère la déconnexion d'un client.
-- inscription(client, client_id): Gère l'inscription d'un utilisateur dans la base de données.
-- broadcast(message, sender): Diffuse un message à tous les clients connectés.
+Variables globales :
+- clients : Dictionnaire des clients connectés.
 
-Variables globales:
-- clients: Dictionnaire des connexions clients et de leurs identifiants.
-- ban: Dictionnaire des clients bannis.
-- kick: Dictionnaire des clients kickés pour un certain temps.
-- db_connection: Connexion à la base de données MySQL.
-- db_cursor: Curseur pour exécuter des requêtes MySQL.
+Fonctions :
+- inscription : Traite la demande d'inscription d'un utilisateur.
+- handle_client : Gère les interactions avec un client.
+
+Note :
+- Le serveur utilise le module socket pour la communication avec les clients.
+- Les messages et les utilisateurs peuvent être stockés dans une base de données MySQL.
 """
 
 # Liste pour stocker les connexions des clients et leurs identifiants

@@ -3,6 +3,22 @@ import threading
 from PyQt5 import QtCore, QtWidgets
 import sys
 
+"""
+Application de discussion avec interface graphique (GUI) en PyQt5.
+
+Ce script crée une application de chat où les utilisateurs peuvent se connecter, s'inscrire,
+et échanger des messages avec un serveur distant.
+
+Classes :
+- Login : Fenêtre de connexion pour saisir le nom d'utilisateur et l'adresse IP du serveur.
+- Chat : Fenêtre principale de chat permettant l'envoi et la réception de messages.
+- Inscription : Fenêtre d'inscription pour créer un nouveau compte utilisateur.
+- ChatApplication : Gère le flux global de l'application, y compris la connexion au serveur.
+
+Fonctions :
+- main : Point d'entrée du script, initialise l'application PyQt et l'instance ChatApplication.
+"""
+
 
 class Login(QtWidgets.QWidget):
     switch_window = QtCore.pyqtSignal(str, str)
