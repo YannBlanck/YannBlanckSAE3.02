@@ -31,7 +31,9 @@ class Login(QtWidgets.QWidget):
         self.send_message(login_data)
 
     def open_inscription(self):
-        ChatApplication.showinsc()
+        self.fenisnc = Inscription(send_message_func=self.send_message)
+        self.fenisnc.inscription_signal.connect(self.switch_window)
+        self.fenisnc.show()
 
     def __init__(self, send_message_func):
         QtWidgets.QWidget.__init__(self)
@@ -50,10 +52,10 @@ class Login(QtWidgets.QWidget):
         self.pushButton.setObjectName("pushButton")
         self.pushButton.clicked.connect(self.sending_login)
 
-        #self.inscbutton = QtWidgets.QPushButton(self)
-        #self.inscbutton.setGeometry(QtCore.QRect(280, 69, 75, 31))
-        #self.inscbutton.setObjectName("inscbutton")
-        #self.inscbutton.clicked.connect(self.open_inscription)
+        self.inscbutton = QtWidgets.QPushButton(self)
+        self.inscbutton.setGeometry(QtCore.QRect(280, 69, 75, 31))
+        self.inscbutton.setObjectName("inscbutton")
+        self.inscbutton.clicked.connect(self.open_inscription)
 
         self.label = QtWidgets.QLabel(self)
         self.label.setGeometry(QtCore.QRect(150, 10, 121, 16))
@@ -78,16 +80,15 @@ class Login(QtWidgets.QWidget):
         layout.addWidget(self.ipLineEdit)
         layout.addWidget(self.lineEdit)
         layout.addWidget(self.pushButton)
-        #layout.addWidget(self.inscbutton)
-
+        layout.addWidget(self.inscbutton)
 
         self.send_message = send_message_func
 
-        self.setWindowTitle("Form")
+        self.setWindowTitle("Login")
         self.pushButton.setText("Connexion")
         self.label.setText("Connexion au serveur")
         self.label_2.setText("Entre votre pseudo")
-        #self.inscbutton.setText("Inscription")
+        self.inscbutton.setText("Inscription")
 
 class Chat(QtWidgets.QWidget):
     message_signal = QtCore.pyqtSignal(str)
@@ -211,7 +212,7 @@ class Inscription(QtWidgets.QWidget):
 
         self.send_message = send_message_func
 
-        self.setWindowTitle("Form")
+        self.setWindowTitle("Inscritpion")
         self.pushButton.setText("Inscription")
         self.label.setText("Inscription au serveur")
         self.label_2.setText("Entrez votre pseudo")

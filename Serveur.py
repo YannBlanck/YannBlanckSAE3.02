@@ -4,6 +4,7 @@ import time
 import mysql.connector
 
 
+
 """
 Serveur de chat basique.
 
@@ -32,8 +33,8 @@ admin = "toto"
 # Initialiser la connexion à la base de données MySQL
 db_connection = mysql.connector.connect(
     host="127.0.0.1",
-    user="root",
-    password="toto",
+    user="Admin",
+    password="Admin",
     database="serveurchat",
     #auth_plugin = "mysql_native_password"
 )
@@ -114,6 +115,7 @@ def commande(serv):
             for client_socket in clients.keys():
                 client_socket.close()
             serv.close()
+            sys.exit(0)
             break
 
         elif comm.lower() == "ban":
