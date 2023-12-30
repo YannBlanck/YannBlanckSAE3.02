@@ -31,7 +31,8 @@ Variables globales:
 clients = {}
 ban = {}
 kick = {}
-heur = {}
+admin = "toto"
+
 
 # Initialiser la connexion à la base de données MySQL
 db_connection = mysql.connector.connect(
@@ -52,7 +53,7 @@ db_cursor.execute('''
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
 ''')
-
+# Créer la table messages si elle n'existe pas
 db_cursor.execute('''
     CREATE TABLE IF NOT EXISTS utilisateurs (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -66,13 +67,36 @@ def save_message(user, message):
     db_cursor.execute("INSERT INTO messages (user, message) VALUES (%s, %s)", (user, message))
     db_connection.commit()
 
+def inscription(client, client_id):
+    global db_cursor
+    global db_connection
+
+    try:
+        # Vérifier si l'utilisateur existe déjà dans la base de données
+        db_cursor.execute("SELECT id FROM utilisateurs WHERE nom = %s", (client_id,))
+        result = db_cursor.fetchone()
+
+        if result:
+            client.send("Cet identifiant est déjà utilisé. Veuillez en choisir un autre.".encode())
+            return
+
+        # Insérer l'utilisateur dans la base de données
+        db_cursor.execute("INSERT INTO utilisateurs (nom) VALUES (%s)", (client_id,))
+        db_connection.commit()
+
+        client.send("Inscription réussie! Vous pouvez maintenant envoyer des messages.".encode())
+    except Exception as e:
+        print(f"Erreur lors de l'inscription : {e}")
+        client.send("Une erreur s'est produite lors de l'inscription.".encode())
+
 def commande(serv):
     global clients
     global ban
     global serveur_connecte  # Ajouter cette ligne
+    global admin
 
     password = input("Entrez le mot de passe du serveur: ")  # Définir un mot de passe
-    if password == "toto":
+    if password == admin:
         serveur_connecte = True
         print("Serveur connecté.")
     else:
@@ -109,7 +133,7 @@ def commande(serv):
             user = command[5:]
             for client_socket, id in clients.items():
                 if id == user:
-                    kick[client_socket] = time.time() + 360  # Bloquer le client pour 60 secondes
+                    kick[client_socket] = time.time() + 120  # Bloquer le client pour 120 secondes
                     break
         else:
             print(f"Commande inconnue: {command}")
@@ -124,34 +148,6 @@ def broadcast(message, sender):
             except:
                 # En cas d'erreur, supprimer le client de la liste
                 remove_client(client)
-
-def remove_client(client):
-    if client in clients:
-        client_id = clients.pop(client)
-        print(f"Client {client_id} déconnecté.")
-        client.close()
-
-def inscription(client, client_id):
-    global db_cursor
-    global db_connection
-
-    try:
-        # Vérifier si l'utilisateur existe déjà dans la base de données
-        db_cursor.execute("SELECT id FROM utilisateurs WHERE nom = %s", (client_id,))
-        result = db_cursor.fetchone()
-
-        if result:
-            client.send("Cet identifiant est déjà utilisé. Veuillez en choisir un autre.".encode())
-            return
-
-        # Insérer l'utilisateur dans la base de données
-        db_cursor.execute("INSERT INTO utilisateurs (nom) VALUES (%s)", (client_id,))
-        db_connection.commit()
-
-        client.send("Inscription réussie! Vous pouvez maintenant envoyer des messages.".encode())
-    except Exception as e:
-        print(f"Erreur lors de l'inscription : {e}")
-        client.send("Une erreur s'est produite lors de l'inscription.".encode())
 
 def message_inscription(client, address):
     client_id = client.recv(1024).decode()
@@ -203,6 +199,11 @@ def message_connexion(client, address):
         # Gérer la déconnexion du client
         handle_disconnection(client)
 
+def remove_client(client):
+    if client in clients:
+        client_id = clients.pop(client)
+        print(f"Client {client_id} déconnecté.")
+        client.close()
 
 def handle_disconnection(client_socket):
     global clients
@@ -224,8 +225,6 @@ def handle_client(client, address):
 
 def main():
     global clients
-
-
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('0.0.0.0', 12345))
